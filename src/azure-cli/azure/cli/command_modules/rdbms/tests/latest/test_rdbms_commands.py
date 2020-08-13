@@ -1033,3 +1033,57 @@ class ReplicationPostgreSqlMgmtScenarioTest(ScenarioTest):  # pylint: disable=to
                  .format(database_engine, resource_group, replicas[0]), checks=NoneCheck())
         self.cmd('{} server delete -g {} --name {} --yes'
                  .format(database_engine, resource_group, replicas[1]), checks=NoneCheck())
+
+
+class FlexibleServerMgmtScenarioTest(ScenarioTest):
+
+    def _get_resource_group_name(self):
+        # follow auto generation logic 
+        # Or set the name based on dummy cli (self.cli_ctx)
+        self.default_rg_name = ''
+
+    @AllowLargeResponse()
+    @ResourceGroupPreparer(parameter_name=self.default_rg_name)#add auto generation logic used
+    @ResourceGroupPreparer()
+    def test_postgres_flexible_server_mgmt(self, resource_group, ):
+        self._test_server_mgmt('postgres', resource_group, 'GENERATED_GROUP_NAME')
+
+    def _test_server_mgmt(self, database_engine, resource_group, DEFAULT_RG_NAME):
+        
+        # server create without parameters
+        default_list_checks = [JMESPathCheck('name', 'DEFAULT_SERVER_NAME'), #add auto generation logic used
+                    JMESPathCheck('resourceGroup', 'DEFAULT_RG_NAME'), #add auto generation logic used
+                    JMESPathCheck('administratorLogin', 'DEFAULT_USERNAME'), #add auto generation logic used
+                    JMESPathCheck('sku.name', 'DEFAULT_SKU_NAME'),
+                    JMESPathCheck('sku.tier', 'DEFAULT_SKU_TIER'),
+                    JMESPathCheck('sku.family', 'DEFAULT_SKU_FAMILY'),
+                    JMESPathCheck('sku.capacity', 'DEFAULT_SKU_CAPACITY')]
+        
+        self.cmd('{} flexible-server create'
+                .format(database_engine),
+                 checks=default_list_checks)
+
+        # server create with required parameters
+        server = self.create_random_name(SERVER_NAME_PREFIX, SERVER_NAME_MAX_LENGTH)
+        admin_login = 'cloudsa'
+        admin_password = ['SecretPassword123']
+        cu = 2; family = 'Gen5'
+        skuname = 'GP_{}_{}'.format(family, cu)
+
+        list_checks = [JMESPathCheck('name', server),
+                       JMESPathCheck('resourceGroup', resource_group_1),
+                       JMESPathCheck('administratorLogin', admin_login),
+                       JMESPathCheck('sslEnforcement', 'Enabled'),
+                       JMESPathCheck('tags.key', '1'),
+                       JMESPathCheck('sku.capacity', old_cu),
+                       JMESPathCheck('storageProfile.backupRetentionDays', backupRetention),
+                       JMESPathCheck('publicNetworkAccess', default_public_network_access),
+                       JMESPathCheck('storageProfile.geoRedundantBackup', geoRedundantBackup)]
+        
+        # test server create with required arguments
+        self.cmd('{} flexible-server create -g {} --name {} '
+                 '--admin-user {} --admin-password {} '
+                 '--sku-name {} '
+                 .format(database_engine, resource_group, server,
+                         admin_login, admin_password, skuname,),
+                 checks=list_checks)
