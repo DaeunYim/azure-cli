@@ -9,6 +9,7 @@ from time import sleep
 from dateutil.tz import tzutc   # pylint: disable=import-error
 from azure_devtools.scenario_tests import AllowLargeResponse
 from msrestazure.azure_exceptions import CloudError
+from azure.cli.core.local_context import AzCLILocalContext, ALL, LOCAL_CONTEXT_FILE
 from azure.cli.core.util import CLIError
 from azure.cli.core.util import parse_proxy_resource_id
 from azure.cli.testsdk.base import execute
@@ -1037,53 +1038,82 @@ class ReplicationPostgreSqlMgmtScenarioTest(ScenarioTest):  # pylint: disable=to
 
 class FlexibleServerMgmtScenarioTest(ScenarioTest):
 
-    def _get_resource_group_name(self):
-        # follow auto generation logic 
-        # Or set the name based on dummy cli (self.cli_ctx)
-        self.default_rg_name = ''
-
+    def _remove_resource_group(self, resource_group_name):
+        self.cmd(self.cli_ctx, 'az group delete --name {} --yes --no-wait'.format(resource_group_name))
+    
     @AllowLargeResponse()
-    @ResourceGroupPreparer(parameter_name=self.default_rg_name)#add auto generation logic used
     @ResourceGroupPreparer()
-    def test_postgres_flexible_server_mgmt(self, resource_group, ):
-        self._test_server_mgmt('postgres', resource_group, 'GENERATED_GROUP_NAME')
+    def test_postgres_flexible_server_mgmt(self, resource_group):
+        self._test_flexible_server_mgmt('postgres', resource_group)
 
-    def _test_server_mgmt(self, database_engine, resource_group, DEFAULT_RG_NAME):
+    def _test_flexible_server_mgmt(self, database_engine, resource_group):
         
-        # server create without parameters
-        default_list_checks = [JMESPathCheck('name', 'DEFAULT_SERVER_NAME'), #add auto generation logic used
-                    JMESPathCheck('resourceGroup', 'DEFAULT_RG_NAME'), #add auto generation logic used
-                    JMESPathCheck('administratorLogin', 'DEFAULT_USERNAME'), #add auto generation logic used
-                    JMESPathCheck('sku.name', 'DEFAULT_SKU_NAME'),
-                    JMESPathCheck('sku.tier', 'DEFAULT_SKU_TIER'),
-                    JMESPathCheck('sku.family', 'DEFAULT_SKU_FAMILY'),
-                    JMESPathCheck('sku.capacity', 'DEFAULT_SKU_CAPACITY')]
+        # 1. test flexible-server create
+        # TODO: Check SKU name, tier, family, capacity (B1MS)
+        create_default_checks_list = [JMESPathCheck('sku.name', 'GP_Gen5_1'),
+                    JMESPathCheck('sku.tier', 'Basic'), 
+                    JMESPathCheck('sku.family', 'Gen5'), 
+                    JMESPathCheck('sku.capacity', '1'), 
+                    JMESPathCheck('storageProfile.storageMB', '32000'),
+                    JMESPathCheck('storageProfile.backupRetentionDays', '7')]
         
-        self.cmd('{} flexible-server create'
-                .format(database_engine),
-                 checks=default_list_checks)
+        # 1-1) flexible-server create without parameters, use auto-generated parameters
+        # TODO: Modify based on auto generation policy. 
+        # create_auto_generated_list_checks = [JMESPathCheck('name', 'DEFAULT_SERVER_NAME'), 
+        #             JMESPathCheck('resourceGroup', 'DEFAULT_RG_NAME'),
+        #             JMESPathCheck('location', 'DEFAULT_LOC'),
+        #             JMESPathCheck('administratorLogin', 'postgres'),
+                    
+        auto_generated_output = self.cmd('{} flexible-server create'.format(database_engine), checks=create_default_checks_list).get_output_in_json()
+        self.assertIn('name', auto_generated_output)
+        self.assertIn('resourceGroup', auto_generated_output)
+        self.assertIn('location', auto_generated_output)
+        self.assertIn('administratorLogin', auto_generated_output)
+        self._remove_resource_group(auto_generated_output['resourceGroup'])
+        
+        # 1-2) flexible-server create without parameters, use local-context parameters
+        local_context = AzCLILocalContext(self.cli_ctx)
+        create_local_context_checks_list = [JMESPathCheck('name',  local_context.get('all', 'server_name')), 
+                    JMESPathCheck('resourceGroup',  local_context.get('all', 'resource_group_name')),
+                    JMESPathCheck('location',  local_context.get('all', 'location_name'))
+                    JMESPathCheck('administratorLogin',  local_context.get('all', 'user_name'))]
+        
+        self.cmd('{} flexible-server create'.format(database_engine),
+                 checks=create_local_context_checks_list + create_default_checks_list)
+        self._remove_resource_group(local_context.get('all', 'resource_group_name'))
 
-        # server create with required parameters
+        # 1-3) flexible-server create with parameters
         server = self.create_random_name(SERVER_NAME_PREFIX, SERVER_NAME_MAX_LENGTH)
-        admin_login = 'cloudsa'
-        admin_password = ['SecretPassword123']
+        admin_user = 'cloudsa'
+        admin_password = 'SecretPassword123'
         cu = 2; family = 'Gen5'
         skuname = 'GP_{}_{}'.format(family, cu)
+        loc = 'eastus'
+        default_public_network_access = 'Enabled'
+        public_network_access = 'Disabled'
+        minimal_tls_version = 'TLS1_2'
+        default_minimal_tls_version = 'TLSEnforcementDisabled'
+        backupRetention = 10
+        geoRedundantBackup = 'Enabled'
+        geoBackupRetention = 20
+        infrastructureEncryption = 'Enabled'
 
         list_checks = [JMESPathCheck('name', server),
-                       JMESPathCheck('resourceGroup', resource_group_1),
-                       JMESPathCheck('administratorLogin', admin_login),
+                       JMESPathCheck('resourceGroup', resource_group),
+                       JMESPathCheck('administratorLogin', admin_user),
                        JMESPathCheck('sslEnforcement', 'Enabled'),
+                       JMESPathCheck('location', loc)
                        JMESPathCheck('tags.key', '1'),
-                       JMESPathCheck('sku.capacity', old_cu),
+                       JMESPathCheck('sku.capacity', cu),
                        JMESPathCheck('storageProfile.backupRetentionDays', backupRetention),
                        JMESPathCheck('publicNetworkAccess', default_public_network_access),
                        JMESPathCheck('storageProfile.geoRedundantBackup', geoRedundantBackup)]
         
-        # test server create with required arguments
-        self.cmd('{} flexible-server create -g {} --name {} '
-                 '--admin-user {} --admin-password {} '
-                 '--sku-name {} '
-                 .format(database_engine, resource_group, server,
-                         admin_login, admin_password, skuname,),
+        self.cmd('{} flexible-server create -g {} --name {} --admin-user {} --admin-password {} --sku-name {}'
+                .format(database_engine, resource_group, server, admin_user, admin_password, skuname),
                  checks=list_checks)
+        
+        # 1-4) flexible-server create failure
+        admin_user = 'root'
+        self.cmd('{} flexible-server create -g {} --admin-user {}'.format(database_engine, resource_group, admin_user),
+                 checks=list_checks, expect_failure=True)
