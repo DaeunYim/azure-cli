@@ -267,7 +267,7 @@ def _flexible_list_skus(cmd, client, location, json=None):
     if not json or json.lower()=='false':
         set_output_format(cmd.cli_ctx, 'table')
     result = client.execute(location)
-    logger.warning('For prices please refer to https://aka.ms/pg_pricing')
+    logger.warning('For prices please refer to https://aka.ms/postgres-pricing')
     return result
 
 
@@ -399,7 +399,7 @@ def _update_local_contexts(cmd, server_name, resource_group_name, location, user
         cmd.cli_ctx.local_context.set([ALL], 'resource_group_name', resource_group_name)
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
-class DbContext:
+class DbContext(object):
     def __init__(self, azure_sdk=None, logging_name=None, cf_firewall=None,
                  command_group=None, server_client=None):
         self.azure_sdk = azure_sdk

@@ -346,7 +346,7 @@ def _flexible_list_skus(cmd, client, location, json=None):
     if not json or json.lower()=='false':
         set_output_format(cmd.cli_ctx, 'table')
     result = client.execute(location)
-    logger.warning('For prices please refer to https://aka.ms/mysql_pricing')
+    logger.warning('For prices please refer to https://aka.ms/mysql-pricing')
     return result
 
 def _create_server(db_context, cmd, resource_group_name, server_name, location, backup_retention, sku_name, tier,
@@ -482,7 +482,7 @@ def _create_mysql_connection_string(host, database_name, user_name, password):
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
-class DbContext:
+class DbContext(object):
     def __init__(self, azure_sdk=None, logging_name=None, cf_firewall=None, cf_db=None,
                  command_group=None, server_client=None):
         self.azure_sdk = azure_sdk
