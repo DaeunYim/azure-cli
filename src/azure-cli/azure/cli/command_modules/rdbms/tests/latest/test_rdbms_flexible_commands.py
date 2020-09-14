@@ -34,15 +34,10 @@ class FlexibleServerMgmtScenarioTest(ScenarioTest):
 
     location = 'eastus2euap'
 
-    # @AllowLargeResponse()
-    # @ResourceGroupPreparer(location=location)
-    # def test_postgres_flexible_server_mgmt(self, resource_group):
-    #     self._test_flexible_server_mgmt('postgres', resource_group)
-
     @AllowLargeResponse()
     @ResourceGroupPreparer(location=location)
-    def test_mysql_flexible_server_mgmt(self, resource_group):
-        self._test_flexible_server_mgmt('mysql', resource_group)
+    def test_postgres_flexible_server_mgmt(self, resource_group):
+        self._test_flexible_server_mgmt('postgres', resource_group)
 
     def _test_flexible_server_mgmt(self, database_engine, resource_group):
         # flexible-server create
