@@ -208,16 +208,17 @@ class FlexibleServerProxyResourceMgmtScenarioTest(ScenarioTest):
     @ResourceGroupPreparer(location=postgres_location)
     @ServerPreparer(engine_type='postgres', location=postgres_location)
     def test_postgres_flexible_server_proxy_resource(self, resource_group, server):
-        self._test_firewall_rule_mgmt('postgres', resource_group, server)
-        self._test_parameter_mgmt('postgres', resource_group, server)
+        # self._test_firewall_rule_mgmt('postgres', resource_group, server)
+        # self._test_parameter_mgmt('postgres', resource_group, server)
+        self._test_database_mgmt('postgres', resource_group, server)
 
-    @AllowLargeResponse()
-    @ResourceGroupPreparer(location=mysql_location)
-    @ServerPreparer(engine_type='mysql', location=mysql_location)
-    def test_mysql_flexible_server_proxy_resource(self, resource_group, server):
-        self._test_firewall_rule_mgmt('mysql', resource_group, server)
-        self._test_parameter_mgmt('mysql', resource_group, server)
-        self._test_database_mgmt('mysql', resource_group, server)
+    # @AllowLargeResponse()
+    # @ResourceGroupPreparer(location=mysql_location)
+    # @ServerPreparer(engine_type='mysql', location=mysql_location)
+    # def test_mysql_flexible_server_proxy_resource(self, resource_group, server):
+    #     self._test_firewall_rule_mgmt('mysql', resource_group, server)
+    #     self._test_parameter_mgmt('mysql', resource_group, server)
+    #     self._test_database_mgmt('mysql', resource_group, server)
 
     def _test_firewall_rule_mgmt(self, database_engine, resource_group, server):
 
