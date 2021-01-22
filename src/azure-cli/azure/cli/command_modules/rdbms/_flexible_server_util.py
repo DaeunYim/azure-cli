@@ -7,7 +7,8 @@
 
 import random
 from knack.log import get_logger
-from msrest.paging import Paged
+# from msrest.paging import Paged
+from azure.core.paging import ItemPaged
 
 from azure.cli.core.commands import LongRunningOperation, _is_poller
 from azure.cli.core.util import CLIError
@@ -246,7 +247,7 @@ def _get_available_values(sku_info, argument, tier=None):
 
 
 def _get_list_from_paged_response(obj_list):
-    return list(obj_list) if isinstance(obj_list, Paged) else obj_list
+    return list(obj_list) if isinstance(obj_list, ItemPaged) else obj_list
 
 
 def _update_location(cmd, resource_group_name):
