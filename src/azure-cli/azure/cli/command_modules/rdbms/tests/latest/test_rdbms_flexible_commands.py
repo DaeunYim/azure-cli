@@ -208,8 +208,8 @@ class FlexibleServerProxyResourceMgmtScenarioTest(ScenarioTest):
     @ResourceGroupPreparer(location=postgres_location)
     @ServerPreparer(engine_type='postgres', location=postgres_location)
     def test_postgres_flexible_server_proxy_resource(self, resource_group, server):
-        # self._test_firewall_rule_mgmt('postgres', resource_group, server)
-        # self._test_parameter_mgmt('postgres', resource_group, server)
+    #     self._test_firewall_rule_mgmt('postgres', resource_group, server)
+    #     self._test_parameter_mgmt('postgres', resource_group, server)
         self._test_database_mgmt('postgres', resource_group, server)
 
     # @AllowLargeResponse()
@@ -298,7 +298,7 @@ class FlexibleServerProxyResourceMgmtScenarioTest(ScenarioTest):
 
         database_name = self.create_random_name('database', 20)
 
-        self.cmd('{} flexible-server db create -g {} -s {} -d {} --collation utf8'.format(database_engine, resource_group, server, database_name),
+        self.cmd('{} flexible-server db create -g {} -s {} -d {}'.format(database_engine, resource_group, server, database_name),
                  checks=[JMESPathCheck('name', database_name)])
 
         self.cmd('{} flexible-server db show -g {} -s {} -d {}'.format(database_engine, resource_group, server, database_name),
@@ -309,7 +309,7 @@ class FlexibleServerProxyResourceMgmtScenarioTest(ScenarioTest):
         self.cmd('{} flexible-server db list -g {} -s {} '.format(database_engine, resource_group, server),
                  checks=[JMESPathCheck('type(@)', 'array')])
 
-        self.cmd('{} flexible-server db delete -g {} -s {} -d {} --yes'.format(database_engine, resource_group, server, database_name),
+        self.cmd('{} flexible-server db delete -g {} -s {} -d {} --y'.format(database_engine, resource_group, server, database_name),
                  checks=NoneCheck())
 
 

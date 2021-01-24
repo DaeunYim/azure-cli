@@ -410,15 +410,24 @@ def load_arguments(self, _):    # pylint: disable=too-many-statements
                        help='The start IP address of the firewall rule. Must be IPv4 format. Use value \'0.0.0.0\' to represent all Azure-internal IP addresses. ')
 
         # db
+        for scope in ['create', 'delete', 'list', 'show']:
+            argument_context_string = '{} flexible-server db {}'.format(command_group, scope)
+            with self.argument_context(argument_context_string) as c:
+                c.argument('resource_group_name', arg_type=resource_group_name_type)
+                if scope == "list":
+                    c.argument('server_name', id_part=None, options_list=['--server-name', '-s'], arg_type=server_name_arg_type)
+                else:
+                    c.argument('server_name', id_part='name', options_list=['--server-name', '-s'], arg_type=server_name_arg_type)
+
         with self.argument_context('{} flexible-server db'.format(command_group)) as c:
-            c.argument('server_name', options_list=['--server-name', '-s'], help='Name of the server.')
-            c.argument('database_name', arg_type=database_name_arg_type, options_list=['--database-name', '-d'], help='The name of a database.')
+            c.argument('database_name', id_part='child_name_1', arg_type=database_name_arg_type, options_list=['--database-name', '-d'], help='The name of a database.')
 
         with self.argument_context('{} flexible-server db create'.format(command_group)) as c:
-            c.argument('database_name', arg_type=database_name_setter_arg_type, options_list=['--database-name', '-d'], help='The name of a database.')
+            c.argument('database_name', id_part='child_name_1', arg_type=database_name_setter_arg_type, options_list=['--database-name', '-d'], help='The name of a database.')
+            c.argument('charset', default='UTF8', help='The charset of the database. The default value is UTF8')
+            c.argument('collation', default='en_US.utf8', help='The collation of the database. The default value is en_US.utf8')
 
         with self.argument_context('{} flexible-server db list'.format(command_group)) as c:
-            c.argument('server_name', id_part=None, options_list=['--server-name', '-s'], arg_type=server_name_arg_type)
             c.argument('database_name', id_part=None, arg_type=database_name_setter_arg_type, options_list=['--database-name', '-d'], help='The name of a database.')
 
         with self.argument_context('{} flexible-server db delete'.format(command_group)) as c:

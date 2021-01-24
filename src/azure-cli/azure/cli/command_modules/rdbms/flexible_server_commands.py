@@ -145,8 +145,8 @@ def load_flexibleserver_command_table(self, _):
     
     with self.command_group('postgres flexible-server db', postgres_flexible_db_sdk,
                         is_preview=True) as g:
-        g.command('create', 'create_or_update')
-        g.custom_command('delete', 'database_delete_func', custom_command_type=flexible_server_custom_common, client_factory=cf_postgres_flexible_db)
+        g.custom_command('create', 'flexible_database_create_func', custom_command_type=flexible_server_custom_common, client_factory=cf_postgres_flexible_db)
+        g.custom_command('delete', 'flexible_database_delete_func', custom_command_type=flexible_server_custom_common, client_factory=cf_postgres_flexible_db)
         g.show_command('show', 'get')
         g.command('list', 'list_by_server')
 
@@ -195,8 +195,9 @@ def load_flexibleserver_command_table(self, _):
 
     with self.command_group('mysql flexible-server db', mysql_flexible_db_sdk,
                             is_preview=True) as g:
+        # g.command('create', 'flexible_database_create_func', custom_command_type=flexible_server_custom_common, client_factory=cf_mysql_flexible_db)
         g.command('create', 'create_or_update')
-        g.custom_command('delete', 'database_delete_func', custom_command_type=flexible_server_custom_common, client_factory=cf_mysql_flexible_db)
+        g.custom_command('delete', 'flexible_database_delete_func', custom_command_type=flexible_server_custom_common, client_factory=cf_mysql_flexible_db)
         g.show_command('show', 'get')
         g.command('list', 'list_by_server')
 

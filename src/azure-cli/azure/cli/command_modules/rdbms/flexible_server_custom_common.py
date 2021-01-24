@@ -95,8 +95,17 @@ def flexible_firewall_rule_update_custom_func(instance, start_ip_address=None, e
         instance.end_ip_address = end_ip_address
     return instance
 
+def flexible_database_create_func(client, resource_group_name=None, server_name=None, database_name=None, charset=None, collation=None):
+    from azure.mgmt.rdbms import postgresql_flexibleservers
+    parameters = postgresql_flexibleservers.models.Database(
+        name=database_name,
+        charset=charset,
+        collation=collation)
+    result = client.begin_create(resource_group_name, server_name, database_name, parameters)
 
-def database_delete_func(client, resource_group_name=None, server_name=None, database_name=None, yes=None):
+    return result
+
+def flexible_database_delete_func(client, resource_group_name=None, server_name=None, database_name=None, yes=None):
     confirm = yes
     result = None
     if resource_group_name is None or server_name is None or database_name is None:
@@ -111,7 +120,7 @@ def database_delete_func(client, resource_group_name=None, server_name=None, dat
             yes=yes)
     if confirm:
         try:
-            result = client.delete(resource_group_name, server_name, database_name)
+            result = client.begin_delete(resource_group_name, server_name, database_name)
         except Exception as ex:  # pylint: disable=broad-except
             logger.error(ex)
     return result

@@ -253,7 +253,7 @@ def server_delete_func(cmd, client, resource_group_name=None, server_name=None, 
             yes=yes)
     if confirm:
         try:
-            result = client.delete(resource_group_name, server_name)
+            result = client.begin_delete(resource_group_name, server_name)
             if cmd.cli_ctx.local_context.is_on:
                 local_context_file = cmd.cli_ctx.local_context._get_local_context_file()  # pylint: disable=protected-access
                 local_context_file.remove_option('postgres flexible-server', 'server_name')
@@ -329,7 +329,7 @@ def _create_server(db_context, cmd, resource_group_name, server_name, location, 
             type=postgresql_flexibleservers.models.ResourceIdentityType.system_assigned.value)
 
     return resolve_poller(
-        server_client.create(resource_group_name, server_name, parameters), cmd.cli_ctx,
+        server_client.begin_create(resource_group_name, server_name, parameters), cmd.cli_ctx,
         '{} Server Create'.format(logging_name))
 
 
