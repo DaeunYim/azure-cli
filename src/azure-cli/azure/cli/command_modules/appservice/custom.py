@@ -63,7 +63,7 @@ from ._create_util import (zip_contents_from_dir, get_runtime_version_details, c
                            detect_os_form_src, get_current_stack_from_runtime, generate_default_app_name)
 from ._constants import (FUNCTIONS_STACKS_API_JSON_PATHS, FUNCTIONS_STACKS_API_KEYS,
                          FUNCTIONS_LINUX_RUNTIME_VERSION_REGEX, FUNCTIONS_WINDOWS_RUNTIME_VERSION_REGEX,
-                         NODE_EXACT_VERSION_DEFAULT, RUNTIME_STACKS, FUNCTIONS_NO_V2_REGIONS)
+                         NODE_EXACT_VERSION_DEFAULT, RUNTIME_STACKS, FUNCTIONS_NO_V2_REGIONS, PUBLIC_CLOUD)
 
 logger = get_logger(__name__)
 
@@ -98,7 +98,7 @@ def create_webapp(cmd, resource_group_name, name, plan, runtime=None, startup_fi
     node_default_version = NODE_EXACT_VERSION_DEFAULT
     location = plan_info.location
     # This is to keep the existing appsettings for a newly created webapp on existing webapp name.
-    name_validation = client.check_name_availability(name, 'Site')
+    name_validation = get_site_availability(cmd, name)
     if not name_validation.name_available:
         if name_validation.reason == 'Invalid':
             raise CLIError(name_validation.message)
@@ -154,7 +154,8 @@ def create_webapp(cmd, resource_group_name, name, plan, runtime=None, startup_fi
             site_config.linux_fx_version = _format_fx_version(encoded_config_file, multicontainer_config_type)
 
     elif plan_info.is_xenon:  # windows container webapp
-        site_config.windows_fx_version = _format_fx_version(deployment_container_image_name)
+        if deployment_container_image_name:
+            site_config.windows_fx_version = _format_fx_version(deployment_container_image_name)
         # set the needed app settings for container image validation
         if name_validation.name_available:
             site_config.app_settings.append(NameValuePair(name="DOCKER_REGISTRY_SERVER_USERNAME",
@@ -2438,17 +2439,24 @@ def import_ssl_cert(cmd, resource_group_name, name, key_vault, key_vault_certifi
     kv_resource_group_name = kv_id_parts['resource_group']
     kv_subscription = kv_id_parts['subscription']
 
-    if kv_subscription.lower() != client.config.subscription_id.lower():
-        diff_subscription_client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_APPSERVICE,
-                                                           subscription_id=kv_subscription)
-        ascs = diff_subscription_client.app_service_certificate_orders.list()
-    else:
-        ascs = client.app_service_certificate_orders.list()
-
+    # If in the public cloud, check if certificate is an app service certificate, in the same or a diferent
+    # subscription
     kv_secret_name = None
-    for asc in ascs:
-        if asc.name == key_vault_certificate_name:
-            kv_secret_name = asc.certificates[key_vault_certificate_name].key_vault_secret_name
+    cloud_type = cmd.cli_ctx.cloud.name
+    if cloud_type.lower() == PUBLIC_CLOUD.lower():
+        if kv_subscription.lower() != client.config.subscription_id.lower():
+            diff_subscription_client = get_mgmt_service_client(cmd.cli_ctx, ResourceType.MGMT_APPSERVICE,
+                                                               subscription_id=kv_subscription)
+            ascs = diff_subscription_client.app_service_certificate_orders.list()
+        else:
+            ascs = client.app_service_certificate_orders.list()
+
+        kv_secret_name = None
+        for asc in ascs:
+            if asc.name == key_vault_certificate_name:
+                kv_secret_name = asc.certificates[key_vault_certificate_name].key_vault_secret_name
+
+    # if kv_secret_name is not populated, it is not an appservice certificate, proceed for KV certificates
     if not kv_secret_name:
         kv_secret_name = key_vault_certificate_name
 
@@ -3718,7 +3726,7 @@ def webapp_up(cmd, name=None, resource_group_name=None, plan=None, location=None
                            "Please check if you have configured defaults for plan name and re-run command."
                            .format(plan, current_plan))
         plan = plan or plan_details['name']
-        plan_info = client.app_service_plans.get(rg_name, plan)
+        plan_info = client.app_service_plans.get(plan_details['resource_group'], plan)
         sku = plan_info.sku.name if isinstance(plan_info, AppServicePlan) else 'Free'
         current_os = 'Linux' if plan_info.reserved else 'Windows'
         # Raise error if current OS of the app is different from the current one
