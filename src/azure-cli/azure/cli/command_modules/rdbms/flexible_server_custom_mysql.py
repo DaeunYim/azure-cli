@@ -32,7 +32,7 @@ def flexible_server_create(cmd, client, resource_group_name=None, server_name=No
                            administrator_login_password=None, version=None,
                            backup_retention=None, tags=None, public_access=None, database_name=None,
                            subnet_arm_resource_id=None, high_availability=None, zone=None, assign_identity=False,
-    #                        vnet_resource_id=None, vnet_address_prefix=None, subnet_address_prefix=None, iops=None):
+                           vnet_resource_id=None, vnet_address_prefix=None, subnet_address_prefix=None, iops=None):
     # # validator
     if location is None:
         location = DEFAULT_LOCATION_MySQL
