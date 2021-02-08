@@ -32,12 +32,12 @@ def flexible_server_create(cmd, client, resource_group_name=None, server_name=No
                            administrator_login_password=None, version=None,
                            backup_retention=None, tags=None, public_access=None, database_name=None,
                            subnet_arm_resource_id=None, high_availability=None, zone=None, assign_identity=False,
-                           vnet_resource_id=None, vnet_address_prefix=None, subnet_address_prefix=None, iops=None):
-    # validator
+    #                        vnet_resource_id=None, vnet_address_prefix=None, subnet_address_prefix=None, iops=None):
+    # # validator
     if location is None:
         location = DEFAULT_LOCATION_MySQL
-    sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
-    mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, version=version)
+    # sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
+    # mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, version=version)
 
     from azure.mgmt.rdbms import mysql_flexibleservers
     db_context = DbContext(
@@ -175,10 +175,10 @@ def flexible_server_update_custom_func(cmd, instance,
                                        replication_role=None,
                                        maintenance_window=None,
                                        iops=None):
-    # validator
+    # # validator
     location = ''.join(instance.location.lower().split())
-    sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
-    mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, instance=instance)
+    # sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
+    # mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, instance=instance)
 
     from importlib import import_module
 
