@@ -37,11 +37,11 @@ def flexible_server_create(cmd, client,
                            assign_identity=False, subnet_arm_resource_id=None,
                            high_availability=None, zone=None, vnet_resource_id=None,
                            vnet_address_prefix=None, subnet_address_prefix=None):
-    # # validator
+    # validator
     if location is None:
         location = DEFAULT_LOCATION_PG
-    # sku_info = get_postgres_list_skus_info(cmd, location)
-    # pg_arguments_validator(tier, sku_name, storage_mb, sku_info, version=version)
+    sku_info = get_postgres_list_skus_info(cmd, location)
+    pg_arguments_validator(tier, sku_name, storage_mb, sku_info, version=version)
     storage_mb *= 1024
 
     from azure.mgmt.rdbms import postgresql_flexibleservers
@@ -181,8 +181,8 @@ def flexible_server_update_custom_func(cmd, instance,
 
     # validator
     location = ''.join(instance.location.lower().split())
-    # sku_info = get_postgres_list_skus_info(cmd, location)
-    # pg_arguments_validator(tier, sku_name, storage_mb, sku_info, instance=instance)
+    sku_info = get_postgres_list_skus_info(cmd, location)
+    pg_arguments_validator(tier, sku_name, storage_mb, sku_info, instance=instance)
 
     from importlib import import_module
 

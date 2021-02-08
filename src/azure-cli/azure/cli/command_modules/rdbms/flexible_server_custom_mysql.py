@@ -33,11 +33,11 @@ def flexible_server_create(cmd, client, resource_group_name=None, server_name=No
                            backup_retention=None, tags=None, public_access=None, database_name=None,
                            subnet_arm_resource_id=None, high_availability=None, zone=None, assign_identity=False,
                            vnet_resource_id=None, vnet_address_prefix=None, subnet_address_prefix=None, iops=None):
-    # # validator
+    # validator
     if location is None:
         location = DEFAULT_LOCATION_MySQL
-    # sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
-    # mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, version=version)
+    sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
+    mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, version=version)
 
     from azure.mgmt.rdbms import mysql_flexibleservers
     db_context = DbContext(
@@ -81,7 +81,7 @@ def flexible_server_create(cmd, client, resource_group_name=None, server_name=No
         delegated_subnet_arguments = None
 
     # calculate IOPS
-    # iops = _determine_iops(storage_mb, iops_info, iops, tier, sku_name)
+    iops = _determine_iops(storage_mb, iops_info, iops, tier, sku_name)
     iops = 100
 
     storage_mb *= 1024  # storage input comes in GiB value
@@ -176,10 +176,10 @@ def flexible_server_update_custom_func(cmd, instance,
                                        replication_role=None,
                                        maintenance_window=None,
                                        iops=None):
-    # # validator
+    # validator
     location = ''.join(instance.location.lower().split())
-    # sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
-    # mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, instance=instance)
+    sku_info, iops_info = get_mysql_list_skus_info(cmd, location)
+    mysql_arguments_validator(tier, sku_name, storage_mb, backup_retention, sku_info, instance=instance)
 
     from importlib import import_module
 
@@ -208,77 +208,77 @@ def flexible_server_update_custom_func(cmd, instance,
             'Standard_E64s_v3': 17
         })
 
-    # if iops:
-    #     if (tier is not None and sku_name is None) or (tier is None and sku_name is not None):
-    #         raise CLIError('Argument Error. If you pass --tier, --sku_name is a mandatory parameter and vice-versa.')
+    if iops:
+        if (tier is not None and sku_name is None) or (tier is None and sku_name is not None):
+            raise CLIError('Argument Error. If you pass --tier, --sku_name is a mandatory parameter and vice-versa.')
 
-    #     if tier is None and sku_name is None:
-    #         iops = _determine_iops(instance.storage_profile.storage_mb // 1024, iops_info, iops, instance.sku.tier, instance.sku.name)
+        if tier is None and sku_name is None:
+            iops = _determine_iops(instance.storage_profile.storage_mb // 1024, iops_info, iops, instance.sku.tier, instance.sku.name)
 
-    #     else:
-    #         new_sku_rank = sku_rank[sku_name]
-    #         old_sku_rank = sku_rank[instance.sku.name]
-    #         supplied_iops = iops
-    #         max_allowed_iops_new_sku = iops_info[tier][sku_name]
-    #         default_iops = 100
-    #         free_iops = (instance.storage_profile.storage_mb // 1024) * 3
+        else:
+            new_sku_rank = sku_rank[sku_name]
+            old_sku_rank = sku_rank[instance.sku.name]
+            supplied_iops = iops
+            max_allowed_iops_new_sku = iops_info[tier][sku_name]
+            default_iops = 100
+            free_iops = (instance.storage_profile.storage_mb // 1024) * 3
 
-    #         # Downgrading SKU
-    #         if new_sku_rank < old_sku_rank:
-    #             if supplied_iops > max_allowed_iops_new_sku:
-    #                 iops = max_allowed_iops_new_sku
-    #                 logger.warning('The max IOPS for your sku is %s. Provisioning the server with %s...', iops, iops)
-    #             elif supplied_iops < default_iops:
-    #                 if free_iops < default_iops:
-    #                     iops = default_iops
-    #                     logger.warning('The min IOPS is %s. Provisioning the server with %s...', default_iops,
-    #                                    default_iops)
-    #                 else:
-    #                     iops = min(max_allowed_iops_new_sku, free_iops)
-    #                     logger.warning('Updating the server with %s free IOPS...', iops)
-    #         else:  # Upgrading SKU
-    #             if supplied_iops > max_allowed_iops_new_sku:
-    #                 iops = max_allowed_iops_new_sku
-    #                 logger.warning(
-    #                     'The max IOPS for your sku is %s. Provisioning the server with %s...', iops, iops)
-    #             elif supplied_iops <= max_allowed_iops_new_sku:
-    #                 iops = max(supplied_iops, min(free_iops, max_allowed_iops_new_sku))
-    #                 if iops != supplied_iops:
-    #                     logger.warning('Updating the server with %s free IOPS...', iops)
-    #             elif supplied_iops < default_iops:
-    #                 if free_iops < default_iops:
-    #                     iops = default_iops
-    #                     logger.warning(
-    #                         'The min IOPS is %s. Updating the server with %s...', default_iops, default_iops)
-    #                 else:
-    #                     iops = min(max_allowed_iops_new_sku, free_iops)
-    #                     logger.warning('Updating the server with %s free IOPS...', iops)
-    #         instance.sku.name = sku_name
-    #         instance.sku.tier = tier
-    #     instance.storage_profile.storage_iops = iops
+            # Downgrading SKU
+            if new_sku_rank < old_sku_rank:
+                if supplied_iops > max_allowed_iops_new_sku:
+                    iops = max_allowed_iops_new_sku
+                    logger.warning('The max IOPS for your sku is %s. Provisioning the server with %s...', iops, iops)
+                elif supplied_iops < default_iops:
+                    if free_iops < default_iops:
+                        iops = default_iops
+                        logger.warning('The min IOPS is %s. Provisioning the server with %s...', default_iops,
+                                       default_iops)
+                    else:
+                        iops = min(max_allowed_iops_new_sku, free_iops)
+                        logger.warning('Updating the server with %s free IOPS...', iops)
+            else:  # Upgrading SKU
+                if supplied_iops > max_allowed_iops_new_sku:
+                    iops = max_allowed_iops_new_sku
+                    logger.warning(
+                        'The max IOPS for your sku is %s. Provisioning the server with %s...', iops, iops)
+                elif supplied_iops <= max_allowed_iops_new_sku:
+                    iops = max(supplied_iops, min(free_iops, max_allowed_iops_new_sku))
+                    if iops != supplied_iops:
+                        logger.warning('Updating the server with %s free IOPS...', iops)
+                elif supplied_iops < default_iops:
+                    if free_iops < default_iops:
+                        iops = default_iops
+                        logger.warning(
+                            'The min IOPS is %s. Updating the server with %s...', default_iops, default_iops)
+                    else:
+                        iops = min(max_allowed_iops_new_sku, free_iops)
+                        logger.warning('Updating the server with %s free IOPS...', iops)
+            instance.sku.name = sku_name
+            instance.sku.tier = tier
+        instance.storage_profile.storage_iops = iops
 
-    # # pylint: disable=too-many-boolean-expressions
-    # if (iops is None and tier is None and sku_name) or (iops is None and sku_name is None and tier):
-    #     raise CLIError('Argument Error. If you pass --tier, --sku_name is a mandatory parameter and vice-versa.')
+    # pylint: disable=too-many-boolean-expressions
+    if (iops is None and tier is None and sku_name) or (iops is None and sku_name is None and tier):
+        raise CLIError('Argument Error. If you pass --tier, --sku_name is a mandatory parameter and vice-versa.')
 
-    # if iops is None and sku_name and tier:
-    #     new_sku_rank = sku_rank[sku_name]
-    #     old_sku_rank = sku_rank[instance.sku.name]
-    #     instance.sku.name = sku_name
-    #     instance.sku.tier = tier
-    #     max_allowed_iops_new_sku = iops_info[tier][sku_name]
-    #     iops = instance.storage_profile.storage_iops
+    if iops is None and sku_name and tier:
+        new_sku_rank = sku_rank[sku_name]
+        old_sku_rank = sku_rank[instance.sku.name]
+        instance.sku.name = sku_name
+        instance.sku.tier = tier
+        max_allowed_iops_new_sku = iops_info[tier][sku_name]
+        iops = instance.storage_profile.storage_iops
 
-    #     if new_sku_rank < old_sku_rank:  # Downgrading
-    #         if instance.storage_profile.storage_iops > max_allowed_iops_new_sku:
-    #             iops = max_allowed_iops_new_sku
-    #             logger.warning('Updating the server with max %s IOPS...', iops)
-    #     else:  # Upgrading
-    #         if instance.storage_profile.storage_iops < (instance.storage_profile.storage_mb // 1024) * 3:
-    #             iops = min(max_allowed_iops_new_sku, (instance.storage_profile.storage_mb // 1024) * 3)
-    #             logger.warning('Updating the server with free %s IOPS...', iops)
+        if new_sku_rank < old_sku_rank:  # Downgrading
+            if instance.storage_profile.storage_iops > max_allowed_iops_new_sku:
+                iops = max_allowed_iops_new_sku
+                logger.warning('Updating the server with max %s IOPS...', iops)
+        else:  # Upgrading
+            if instance.storage_profile.storage_iops < (instance.storage_profile.storage_mb // 1024) * 3:
+                iops = min(max_allowed_iops_new_sku, (instance.storage_profile.storage_mb // 1024) * 3)
+                logger.warning('Updating the server with free %s IOPS...', iops)
 
-    #     instance.storage_profile.storage_iops = iops
+        instance.storage_profile.storage_iops = iops
 
     if backup_retention:
         instance.storage_profile.backup_retention_days = backup_retention
