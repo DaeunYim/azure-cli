@@ -11,4 +11,4 @@ jobs:
       with:
         connection-string: ${{ secrets.AZURE_POSTGRESQL_CONNECTION_STRING }}
         server-name: daeunyim-gh.postgres.database.azure.com
-        plsql-file: ./postgres_sample.sql
+        plsql-file: ./scripts/postgres_sample.sql
