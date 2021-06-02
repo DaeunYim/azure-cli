@@ -7,8 +7,9 @@ jobs:
     - uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-    - uses: azure/postgresql@v1
+    - uses: azure/mysql@v1
       with:
-        connection-string: ${{ secrets.DAEUNYIM_GH_FLEXIBLESERVERDB_POSTGRESQL_CONNECTION_STRING}}
-        plsql-file: ./scripts/postgres_sample.sql
-        server-name: daeunyim-gh.postgres.database.azure.com
+        connection-string: ${{ secrets.DAEUNYIM_GH_FLEXIBLESERVERDB_MYSQL_CONNECTION_STRING
+          }}
+        server-name: daeunyim-gh.mysql.database.azure.com
+        sql-file: ./scripts/postgres_sample.sql
